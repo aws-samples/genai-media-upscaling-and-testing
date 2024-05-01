@@ -1,4 +1,4 @@
-# Upscaler
+# Image Upscaling & Testing Using Generative AI
 
 Images are used in a variety of use cases. These images need to be stored, at a cost, so they can be retrieved when needed. Depending on the sizes of these images, storage costs can be significant. By down scaling images before storing them, the size of the image file is reduced and therefore reducing the cost of storage. 
 At the time of retrieval, this Upscaler can be utilized to upscale the image before use. Feasibility of this workflow is based on the use case and type of images stored. This project will provide an easy to use API to implement this workflow. 

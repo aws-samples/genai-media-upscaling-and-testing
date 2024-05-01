@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upscale
+  namespace: upscale
+spec:
+  selector:
+    matchLabels:
+      app: upscale
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: upscale
+    spec:
+      serviceAccountName: iamserviceaccount
+      containers:
+        - name: upscale
+          # image: <{ACCOUNTID}.dkr.ecr.{REGION}.amazonaws.com/{IMAGE}:{TAG}>
+          imagePullPolicy: Always
+          env:
+          - name: SSL_CERT
+            value: "/app/ssl/tls.crt"
+          - name: SSL_KEY
+            value: "/app/ssl/tls.key" 
+          ports:
+            - containerPort: 8443
+          volumeMounts:
+            - name: tlscerts
+              mountPath: /app/ssl
+              readOnly: true
+      volumes:
+        - name: tlscerts
+          secret:
+            secretName: upscale-tls
+

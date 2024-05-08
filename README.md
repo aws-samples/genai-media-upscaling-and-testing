@@ -3,6 +3,10 @@
 Images are used in a variety of use cases. These images need to be stored, at a cost, so they can be retrieved when needed. Depending on the sizes of these images, storage costs can be significant. By down scaling images before storing them, the size of the image file is reduced and therefore reducing the cost of storage. 
 At the time of retrieval, this Upscaler can be utilized to upscale the image before use. Feasibility of this workflow is based on the use case and type of images stored. This project will provide an easy to use API to implement this workflow. 
 
+# Use Cases
+
+The explosion in data, driven in parts by AI is putting pressure on customers to reduce storage costs. This is challenging for customers who are required to store media in high definition. a lot of these customers never actually need to access large portions of the stored media again. Upscaling unlocks the ability for customers to recreate their media from low resolution files which opens up the possibility to downscale the media on ingest and only upscale if the media is ever requested again. This can have dramatic cost savings on the storage and because not all of the media will be accessed again, the cost of upscaling can be offset against the savings on the entire dataset saved at lower kb. 
+
 ### Upscaler Extensions:
 
 This project utilizes a Python interface named UpscaleProvider that enforces the upscale image method in any class that implements the interface. 

@@ -1,0 +1,14 @@
+*.csv
+*.env
+*.crt
+*.key
+testenv
+apienv
+package-lock.json
+.DS_Store
+testFile.csv
+Testing/TestResults/*
+Testing/testFile.csv
+__pycache__/*
+__pycache__
+.DS_Store

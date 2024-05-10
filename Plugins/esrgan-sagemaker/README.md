@@ -6,10 +6,11 @@ This package will deploy a sagemaker endpoint serving a model based on [Real-ESR
 
 1. Create Sagemaker execution role. See [AWS Documentation](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role) on how to do this.
 
-2. Download the model weights for the Real-ESRGAN model:
+2. Download the model weights for the Real-ESRGAN model and create the model.tar.gz:
 
 ```
-wget https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth -P model/
+wget https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth
+tar -czf model.tar.gz RealESRGAN_x4plus.pth
 ```
 
 3. Install SageMaker Python SDK and other dependencies

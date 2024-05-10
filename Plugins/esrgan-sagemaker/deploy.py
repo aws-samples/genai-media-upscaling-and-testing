@@ -9,7 +9,7 @@ role = "arn:aws:iam::402484017262:role/service-role/AmazonSageMaker-ExecutionRol
 
 pytorch_model = PyTorchModel(
                              model_data="model.tar.gz",
-                             source_dir="./model/", 
+                             source_dir="./code/", 
                              role=role,
                              entry_point="inference.py",
                              image_uri=f"763104351884.dkr.ecr.{region}.amazonaws.com/pytorch-inference:2.0.0-gpu-py310-cu118-ubuntu20.04-sagemaker")

@@ -13,7 +13,7 @@ This project utilizes a Python interface named UpscaleProvider that enforces the
 
 That interface is then implemented by a class named S3CommonUpscaler which implements a method to downscale an image and store it in S3.
 
-Finally the SagemakerRTUpscaleProvider class implements a Sagemaker Jumpstart endpoint which serves the upscale model by Stability AI. This model uses an input image and prompt to upscale the images. In this implementation, no prompt used to simplify the workflow. The model is deployable directly from the JumpStart notebooks in SageMaker studio. 
+Finally the SagemakerRTUpscaleProvider class implements methods to call a Sagemaker Jumpstart endpoint which serves the upscale model by Stability AI. This model uses an input image and prompt to upscale the images. In this implementation, no prompt used to simplify the workflow. The model is deployable directly from the JumpStart notebooks in SageMaker studio. This class can serve as a base for implementing other models that are served through a Sagemaker endpoint. 
 
 The instructions for deployment are here: https://aws.amazon.com/blogs/machine-learning/upscale-images-with-stable-diffusion-in-amazon-sagemaker-jumpstart/
 

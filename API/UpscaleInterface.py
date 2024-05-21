@@ -32,6 +32,12 @@ class UpscaleInterfaceMeta(abc.ABCMeta):
         # Return the base64 encoded image.
         pass
 
+    @abc.abstractmethod
+    def upscale_video(self, s3_bucket:str, s3_key:str) -> str:
+        # receive an s3 bucket and key of a video and upscale it.
+        # Return a job id.
+        pass
+
 # Concrete Parent Class
 class UpscaleProvider(metaclass=UpscaleInterfaceMeta):
     def __init__(self, upscale_model):

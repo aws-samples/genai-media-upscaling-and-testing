@@ -95,3 +95,6 @@ class S3CommonUpscaler(UpscaleProvider):
             logging.info("cannot upload to S3")
             return status
         return status
+    
+    def send_and_downscale_video(self, s3_bucket: str, s3_key: str) -> str:
+        pass

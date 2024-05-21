@@ -134,3 +134,6 @@ class SagemakerRTUpscaleProvider(S3CommonUpscaler):
         except Exception as e:
             logging.info("Unable to upscale image" + str(e))
             return "Unable to upscale image"
+        
+    def retrieve_and_upscale_video(self, key: str) -> str:
+        pass

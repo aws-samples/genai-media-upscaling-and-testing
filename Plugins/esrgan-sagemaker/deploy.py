@@ -5,7 +5,7 @@ session = boto3.session.Session()
 region = session.region_name
 
 # Sagemaker execution role
-role = "arn:aws:iam::402484017262:role/service-role/AmazonSageMaker-ExecutionRole-20200828T151739"
+role = "<SAGEMAKER EXECUTION ROLE>"
 
 pytorch_model = PyTorchModel(
                              model_data="model.tar.gz",

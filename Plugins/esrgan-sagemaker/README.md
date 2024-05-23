@@ -2,6 +2,10 @@
 
 This package will deploy a sagemaker endpoint serving a model based on [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN]). This endpoint can then be used as an another upscaling method for the S3 upscaling workflow. 
 
+## Prerequisites
+
+* Python 3.11 (**Note** Python 3.12 will not work as there is a [known issue](https://github.com/aws/sagemaker-python-sdk/issues/4534) in the sagemaker python sdk that the deployment script depends on. It is recommended to use an venv with Python 3.11.)
+
 ## Deploy Sagemaker Endpoint
 
 1. Create Sagemaker execution role. See [AWS Documentation](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role) on how to do this.

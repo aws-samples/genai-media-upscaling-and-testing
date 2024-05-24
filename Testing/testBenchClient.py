@@ -65,7 +65,7 @@ def send_image_to_api(image_path, api_url, s3Key):
         
     
     encoded_image = base64.b64encode(image_data).decode('utf-8')
-    data = {'image': encoded_image, "s3_bucket":s3_bucket, "s3_key_name": s3Key, "endpoint":endpoint, 'upscaleMethod': "stableDiffusionJT"}
+    data = {'image': encoded_image, "s3_bucket":s3_bucket, "s3_key_name": s3Key, "endpoint":endpoint, 'upscaleMethod': "sageMakerRT"}
 
     headers = {'Content-Type': 'application/json'}
     response = requests.post(api_url+'/store', headers=headers, json=data, verify=False)

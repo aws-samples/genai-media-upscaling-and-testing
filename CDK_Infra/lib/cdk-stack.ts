@@ -21,6 +21,7 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { NagSuppressions } from 'cdk-nag';
 import { KubectlV29Layer } from '@aws-cdk/lambda-layer-kubectl-v29';
 const request = require('sync-request');
@@ -28,6 +29,10 @@ const request = require('sync-request');
 export class CdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    //Creates SQS Queue for the video downscaler/upscaler containers
+    const sqs_queue = new sqs.Queue(this, 'upscalerVideoQueue');
+    
     //This will create the VPC for the EKS cluster
     //The VPC will have 2 public subnets and 4 private subnets split over 2 AZs
     //The private subnets will be used for the EKS cluster and the public subnets will be used for ELB.
@@ -102,20 +107,38 @@ export class CdkStack extends cdk.Stack {
       actions: [
         //SageMaker permissions
         "sagemaker:InvokeEndpoint",
+        //S3 permissions
         "s3:GetObject",
-				"s3:PutObject"
+				"s3:PutObject",
+        //SQS permissions
+        "sqs:GetQueueUrl",
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
       ],
       resources: [
+        sqs_queue.queueArn,
         //TO-DO:
         // "<SageMaker ARN>",
         //TO-DO:
-        // "<S3 Bucket ARN>/*"
+        // "<S3 Bucket ARN>/*",
+        //TO-DO:
+        // "<SQS Queue ARN>"
+      ]
+    }));
+    serviceAccount.addToPrincipalPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        //SQS permissions
+        "sqs:ListQueues",
+      ],
+      resources: [
+        "arn:aws:sqs:"+this.region+":"+this.account+":*",
       ]
     }));
 
     // If you are on an x86 Machine change the instance type. 
-    // const x86InstanceType = ec2.InstanceType.of(ec2.InstanceClass.M5, ec2.InstanceSize.XLARGE)  
-    const ARMInstanceType = ec2.InstanceType.of(ec2.InstanceClass.M7G, ec2.InstanceSize.XLARGE)
+    const x86InstanceType = ec2.InstanceType.of(ec2.InstanceClass.M5, ec2.InstanceSize.XLARGE)  
+    // const ARMInstanceType = ec2.InstanceType.of(ec2.InstanceClass.M7G, ec2.InstanceSize.XLARGE)
     //This will create the NodeGroup in the cluster
     const upscalerClusterNodeGroup = new eks.Nodegroup(this, 'upscalerClusterNodeGroup', {
       nodegroupName: "upscalerClusterNodeGroup",
@@ -123,7 +146,7 @@ export class CdkStack extends cdk.Stack {
       minSize: 4,
       maxSize: 4,
       instanceTypes: [
-        ARMInstanceType
+        x86InstanceType
       ]
     });
 
@@ -192,6 +215,13 @@ export class CdkStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       repositoryName: "upscaler-api"
     });
-    new cdk.CfnOutput(this, 'ECRRepoURI', { value: upscalerAPIRepository.repositoryUri });
+    new cdk.CfnOutput(this, 'APIECRRepoURI', { value: upscalerAPIRepository.repositoryUri });
+
+    const videoUpscalerAPIRepository = new ecr.Repository(this, 'videoUpscalerAPIRepository', {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      repositoryName: "upscaler-video"
+    });
+
+    new cdk.CfnOutput(this, 'VIDEOECRRepoURI', { value: videoUpscalerAPIRepository.repositoryUri });
   }
 }

@@ -1,36 +1,47 @@
-# Image Upscaling & Testing Using Generative AI
+# Media Upscaling & Testing Using Generative AI
 
-Images are used in a variety of use cases. These images need to be stored, at a cost, so they can be retrieved when needed. Depending on the sizes of these images, storage costs can be significant. By down scaling images before storing them, the size of the image file is reduced and therefore reducing the cost of storage. 
-At the time of retrieval, this Upscaler can be utilized to upscale the image before use. Feasibility of this workflow is based on the use case and type of images stored. This project will provide an easy to use API to implement this workflow. 
+Images and Videos are used in a variety of use cases. These images/videos need to be stored, at a cost, so they can be retrieved when needed. Depending on the sizes of these images/videos, storage costs can be significant. By down scaling images/videos before storing them, the size of the image file is reduced and therefore reducing the cost of storage. 
+At the time of retrieval, this Upscaler can be utilized to upscale the image before use. Feasibility of this workflow is based on the use case and type of images/videos stored. This project will provide an easy to use API to implement this workflow. 
 
 # Use Cases
 
 The explosion in data, driven in parts by AI is putting pressure on customers to reduce storage costs. This is challenging for customers who are required to store media in high definition. a lot of these customers never actually need to access large portions of the stored media again. Upscaling unlocks the ability for customers to recreate their media from low resolution files which opens up the possibility to downscale the media on ingest and only upscale if the media is ever requested again. This can have dramatic cost savings on the storage and because not all of the media will be accessed again, the cost of upscaling can be offset against the savings on the entire dataset saved at lower kb. 
 
-### Upscaler Extensions:
+### Image Upscaler Extensions:
 
 This project utilizes a Python interface named UpscaleProvider that enforces the upscale image method in any class that implements the interface.
 
 That interface is then implemented by a class named S3CommonUpscaler which implements a method to downscale an image and store it in S3.
 
-Finally the SagemakerRTUpscaleProvider class implements methods to call a Sagemaker Jumpstart endpoint which serves the upscale model by Stability AI. This model uses an input image and prompt to upscale the images. In this implementation, no prompt used to simplify the workflow. The model is deployable directly from the JumpStart notebooks in SageMaker studio. This class can serve as a base for implementing other models that are served through a Sagemaker endpoint. 
+Finally the SagemakerRTUpscaleProvider class implements methods to call a Sagemaker endpoint which serves the upscale model. This model uses an input image and in some cases a prompt to upscale the images. In this implementation, no prompt is used to simplify the workflow. 
+
+### Video Upscaler:
+
+A video upscaler is included in this project. It utilizes a different workflow from the Image Upscaler, as the time it takes to downscale or upscale a video is significantly longer than an image. In this case, it is asynchronous and utilizes an SQS queue to decouple the API service with the Video downscale/upscale service. Another note is that while the video upscaler is compatible with the Stable Diffusion model, the results are better when using the Real-ESRGAN model. So that model is the default model utilized for video upscaling.
+
+### Compatible Models:
+
+* Stable Diffusion ×4 Upscaler FP16 is a upscale model currently deployable by Jumpstart. The “x4” is the amount the model will upscale and the FP16 stands for 16-bit floating point, which means it uses 16 bits(binary digits) to represent a number. This Upscaling model of Stable AI is able to work on an image and then upscale it by generating new pixels. These new pixels are incorporated into a brand new upscaled version of the original image. For more info, visit this press release: Stability AI is a Generative AI leader that builds its models on AWS https://press.aboutamazon.com/2022/11/stability-ai-selects-aws-as-its-preferred-cloud-provider-to-build-artificial-intelligence-for-the-future. 
+
+* Real-ESRGAN is a general model for Image/Video restoration. It is based on the [this repo](https://github.com/xinntao/Real-ESRGAN). 
+
+### Deploying Stable Diffusion x4 Upscaler FP16
+
+The model is deployable directly from the JumpStart notebooks in SageMaker studio. This class can serve as a base for implementing other models that are served through a Sagemaker endpoint. 
 
 The instructions for deployment are here: https://aws.amazon.com/blogs/machine-learning/upscale-images-with-stable-diffusion-in-amazon-sagemaker-jumpstart/
 
 Here is a video that walks through the Endpoint Deployment: https://d2908q01vomqb2.cloudfront.net/artifacts/DBSBlogs/ml-12752/upscaling_video_final.mp4?_=1
 
-### The Model:
+### Deploying Real-ESRGAN
 
-Stability AI is a Generative AI leader that builds its models on AWS https://press.aboutamazon.com/2022/11/stability-ai-selects-aws-as-its-preferred-cloud-provider-to-build-artificial-intelligence-for-the-future. 
-The base upscale model used by JumpStart is Stable Diffusion ×4 Upscaler FP16. the “x4” is the amount the model will upscale and the FP16 stands for 16-bit floating point, which means it uses 16 bits(binary digits) to represent a number. 
-This Upscaling model of Stable AI is able to work on an image and then upscale it by generating new pixels. These new pixels are incorporated into a brand new upscaled version of the original image. 
-
+See documentation in the `Plugins/esrgan-sagemaker` directory. 
 
 ## Repo Walkthrough
 
 ### API
 
-* The API directory contains the **Flask API** that the user interacts with. The API calls are *backed* by `downscale_s3.py` file that uses the  **JumpStart Provider** which *implements* the **Upscale Interface**.
+* The API directory contains the **Flask API** that the user interacts with. The API calls are *backed* by `downscale_s3.py` file that uses the  **Sagemaker Provider** which *implements* the **Upscale Interface**.
 * This directory contains the `Dockerfile` that is used to create the API container that will be used in a pod on the EKS cluster
 * This directory contains a `requirements.txt` file to install all of the necessary pip packages
 * This directory contains a SSL folder to store key and certificates. 
@@ -48,6 +59,14 @@ This Upscaling model of Stable AI is able to work on an image and then upscale i
 ### Client
 
 * This directory contains a simple client that can be used to interact with the deployed API for testing or configuration purposes.  
+
+### Plugins
+
+* This directory contains other upscale models which can be utilized with this project. 
+
+### VideoUpscaler
+
+* This directory contains the VideoUpscaler service. 
 
 ### Testing
 
@@ -183,13 +202,13 @@ cdk deploy
 <img src="Resources/Documentation/CDK-Deploy.png" alt="DeploymentDeploy"/>
 <img src="Resources/Documentation/CDK-Done.png" alt="Deployment"/>
 
-7) Once the CDK stack is completely deployed, navigate to the ECR page in the Management console to view the newly created repository 
-> **Note:** Make sure to use the correct ECR repo it should look something like this: `012345678910.dkr.ecr.us-east-1.amazonaws.com/upscaler-api` you will need to copy and save the value of the ECR for the next portion
+7) Once the CDK stack is completely deployed, navigate to the ECR page in the Management console to view the newly created repositories. 
+> **Note:** Make sure to note down the two ECR repos. One is for the API/Image upscaler and the other is for the Video upscaler. The correct ECR repos should look something like this: `012345678910.dkr.ecr.us-east-1.amazonaws.com/upscaler-api` or `012345678910.dkr.ecr.us-east-1.amazonaws.com/upscaler-video`. You will need to copy and save the value of the both ECR repos for the next portion
 
 
 <img src="Resources/Documentation/ECR.png" alt="ECR"/>
 
-### Docker Container and ECR
+### Building Docker Containers for API and VideoUpscaler
 
 Once the CDK is deployed the infrastructure will be deployed in the AWS Cloud. This portion of the instructions will walk you through building the API image, pushing the image to the ECR, connecting to the EKS cluster, and lastly configuring the EKS cluster with a service, deployment, and cert. 
 
@@ -202,19 +221,43 @@ cd API
 2) Build the image
 
 ```
- docker build . -t {ECR}:latest
+ docker build . -t {APIECR}:latest
 ```
 
 3) Authenticate ECR with Docker
 
 ```
- aws ecr get-login-password --region <REGION> | docker login --username AWS --password-stdin {ECR}
+ aws ecr get-login-password --region <REGION> | docker login --username AWS --password-stdin {APIECR}
 ```
 
 4) Push to Image to ECR
 
 ```
-docker push {ECR}:latest
+docker push {APIECR}:latest
+```
+
+5) Repeat the steps for the container in the `VideoUpscaler` directory.
+
+```
+cd VideoUpscaler
+```
+
+6) Build the image
+
+```
+ docker build . -t {VIDEOECR}:latest
+```
+
+7) Authenticate ECR with Docker
+
+```
+ aws ecr get-login-password --region <REGION> | docker login --username AWS --password-stdin {VIDEOECR}
+```
+
+8) Push to Image to ECR
+
+```
+docker push {VIDEOECR}:latest
 ```
 
 ### EKS 
@@ -239,9 +282,9 @@ kubectl apply -f cert.yaml
 ```
 > **Note:** This is a self signed certificate. If you want to use in production make sure to get a CA signed certificate. 
 
-4) Create the Deployment
+4) Create the Deployment for the API
 
-* Configure the `deployment.yaml` file before deploying by changing the image of the deployment to your own `{ECR}`
+* Configure the `deployment.yaml` file before deploying by changing the image of the deployment to your own `{ECRAPI}`
 
 ```
 image: 1234567890.dkr.ecr.us-east-1.amazonaws.com/upscaler-api:latest
@@ -264,6 +307,25 @@ loadBalancerSourceRanges:
 
 ```
 kubectl apply -f service.yaml
+```
+
+6) Create the Deployment for the VideoUpscaler
+
+* Configure the `videoupscaler.yaml` file before deploying by changing the image of the deployment to your own `{ECRVIDEO}`
+
+```
+image: 1234567890.dkr.ecr.us-east-1.amazonaws.com/upscaler-video:latest
+```
+
+Replace the <SQS QUEUE> with the queue that was created as part of the cdk deployment.
+```
+env:
+  - name: SQS_QUEUE
+    value: "<SQS QUEUE>"
+```
+
+```
+kubectl apply -f videoupscaler.yaml
 ```
 
 ###  Test Bench

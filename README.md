@@ -455,15 +455,15 @@ python testBenchClient.py
 * max_size - Maximum size of the downscale operation.  
 **Return:** Returns id of the store video operation.    
 
-**Path:** /retrieveVideo
-**Description:** Will upscale the video and store into S3.
-**Method:** GET
-**Content-Type:** N/A
-**Arguments:** 
+**Path:** /retrieveVideo  
+**Description:** Will upscale the video and store into S3.  
+**Method:** GET  
+**Content-Type:** N/A  
+**Arguments:**  
 * s3_key - S3 key where the downscaled video is stored.  
 * s3_bucket - S3 bucket where the downscaled video is stored.  
 * endpoint - Sagemaker endpoint to be utilized for upscaling.  
-* max_workers - Maximum workers to be utilized for upscaling. This determines the speed of the upscaling operation depending on how busy your Sagemaker endpoints are.    
+* max_workers - Maximum workers to be utilized for upscaling. This determines the speed of the upscaling operation depending on how busy your Sagemaker endpoints are.  
 **Return:** Returns id of the retrieve video operation.  
 
 **Path:** /getVideoStatus  

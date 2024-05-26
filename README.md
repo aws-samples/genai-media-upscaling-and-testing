@@ -406,6 +406,62 @@ python testBenchClient.py
 #### Done
 <img src="Resources/Documentation/testBenchDone.png" alt="Done"/>
 
+### API Reference
+
+#### Image Upscaler
+
+**Path:** /store
+**Description:** Will take base64 encoded image, downscale it, and store into S3.
+**Method:** POST
+**Content-Type:** application/json
+**Arguments:** 
+* image - base64 encoded image
+* s3_key_name - S3 key where the downscaled image will be stored
+* s3_bucket - S3 bucket where the downscaled image will be stored
+**Return:** Returns status of the operation.
+
+**Path:** /retrieve
+**Description:** Will upscale the image and return base64 encoded image.
+**Method:** GET
+**Content-Type:** N/A
+**Arguments:** 
+* s3_key - S3 key where the downscaled image is stored.
+* s3_bucket - S3 bucket where the downscaled image is stored
+* endpoint - Sagemaker endpoint to be utilized for upscaling
+**Return:** Returns a base64 encoded image.
+
+#### Video Upscaler
+
+**Path:** /storeVideo
+**Description:** Will take video stored in S3, downscale it, and store into S3.
+**Method:** POST
+**Content-Type:** application/json
+**Arguments:** 
+* s3_key_name - S3 key of the video to be downscaled.
+* s3_bucket - S3 bucket of the video to be downscaled.
+* min_size - Minimum size of the downscale operation.
+* max_size - Maximum size of the downscale operation.
+**Return:** Returns id of the store video operation.
+
+**Path:** /retrieveVideo
+**Description:** Will upscale the video and store into S3.
+**Method:** GET
+**Content-Type:** N/A
+**Arguments:** 
+* s3_key - S3 key where the downscaled video is stored.
+* s3_bucket - S3 bucket where the downscaled video is stored
+* endpoint - Sagemaker endpoint to be utilized for upscaling
+* max_workers - Maximum workers to be utilized for upscaling. This determines the speed of the upscaling operation depending on how busy your Sagemaker endpoints are.
+**Return:** Returns id of the retrieve video operation.
+
+**Path:** /getVideoStatus
+**Description:** Will get the status of the video store/retrieve operation.
+**Method:** GET
+**Content-Type:** N/A
+**Arguments:** 
+* id - id of the video store/retrieve operation
+**Return:** Returns status of the retrieve video operation.
+
 ### Teardown
 
 1) Destroy the CDK stack:

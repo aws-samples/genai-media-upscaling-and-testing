@@ -37,8 +37,13 @@ export class CdkStack extends cdk.Stack {
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
     });
 
+    new cdk.CfnOutput(this, 'DDB_TABLE', { value: jobtable.tableName });
+
     //Creates SQS Queue for the video downscaler/upscaler containers
     const sqs_queue = new sqs.Queue(this, 'upscalerVideoQueue');
+
+    new cdk.CfnOutput(this, 'SQS_QUEUE', { value: sqs_queue.queueName });
+    new cdk.CfnOutput(this, 'SQS_QUEUE_URL', { value: sqs_queue.queueUrl });
     
     //This will create the VPC for the EKS cluster
     //The VPC will have 2 public subnets and 4 private subnets split over 2 AZs

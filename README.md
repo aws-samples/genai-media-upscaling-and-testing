@@ -202,11 +202,13 @@ cdk deploy
 <img src="Resources/Documentation/CDK-Deploy.png" alt="DeploymentDeploy"/>
 <img src="Resources/Documentation/CDK-Done.png" alt="Deployment"/>
 
-7) Once the CDK stack is completely deployed, navigate to the ECR page in the Management console to view the newly created repositories. 
-> **Note:** Make sure to note down the two ECR repos. One is for the API/Image upscaler and the other is for the Video upscaler. The correct ECR repos should look something like this: `012345678910.dkr.ecr.us-east-1.amazonaws.com/upscaler-api` or `012345678910.dkr.ecr.us-east-1.amazonaws.com/upscaler-video`. You will need to copy and save the value of the both ECR repos for the next portion
+7) Once the CDK stack is completely deployed, note down the following CDK outputs which will be needed for the next steps:
 
-
-<img src="Resources/Documentation/ECR.png" alt="ECR"/>
+* APIECRRepoURI - ECR repo uri for the API container.
+* VIDEOECRRepoURI - ECR repo uri for the Video Upscaler container.
+* DDB_TABLE - DynamoDB table name for tracking Video Upscaling operations.
+* SQS_QUEUE - SQS queue name for the SQS queue that handles Video Upscaling operations.
+* SQS_QUEUE_URL - SQS queue URL for the SQS queue that handles Video Upscaling operations.
 
 ### Building Docker Containers for API and VideoUpscaler
 
@@ -290,6 +292,14 @@ kubectl apply -f cert.yaml
 image: 1234567890.dkr.ecr.us-east-1.amazonaws.com/upscaler-api:latest
 ```
 
+Replace <DDB TABLE> and <SQS QUEUE URL> witht he appropriate values of the queue and table from the cdk deployment.
+```
+- name: DDB_TABLE
+  value: "<DDB TABLE>"
+- name: SQS_QUEUE_URL
+  value: "<SQS QUEUE URL>" 
+```
+
 ```
 kubectl apply -f deployment.yaml
 ```
@@ -317,11 +327,13 @@ kubectl apply -f service.yaml
 image: 1234567890.dkr.ecr.us-east-1.amazonaws.com/upscaler-video:latest
 ```
 
-Replace the <SQS QUEUE> with the queue that was created as part of the cdk deployment.
+Replace the <SQS QUEUE> and <DDB TABLE> with the queue and table that was created as part of the cdk deployment.
 ```
 env:
   - name: SQS_QUEUE
     value: "<SQS QUEUE>"
+  - name: DDB_TABLE
+    value: "<DDB TABLE>"
 ```
 
 ```
@@ -410,57 +422,57 @@ python testBenchClient.py
 
 #### Image Upscaler
 
-**Path:** /store
-**Description:** Will take base64 encoded image, downscale it, and store into S3.
-**Method:** POST
-**Content-Type:** application/json
-**Arguments:** 
-* image - base64 encoded image
-* s3_key_name - S3 key where the downscaled image will be stored
-* s3_bucket - S3 bucket where the downscaled image will be stored
-**Return:** Returns status of the operation.
+**Path:** /store  
+**Description:** Will take base64 encoded image, downscale it, and store into S3.  
+**Method:** POST  
+**Content-Type:** application/json  
+**Arguments:**  
+* image - base64 encoded image.
+* s3_key_name - S3 key where the downscaled image will be stored.
+* s3_bucket - S3 bucket where the downscaled image will be stored.
+**Return:** Returns status of the operation.  
 
-**Path:** /retrieve
-**Description:** Will upscale the image and return base64 encoded image.
-**Method:** GET
-**Content-Type:** N/A
-**Arguments:** 
+**Path:** /retrieve  
+**Description:** Will upscale the image and return base64 encoded image.  
+**Method:** GET  
+**Content-Type:** N/A  
+**Arguments:**  
 * s3_key - S3 key where the downscaled image is stored.
-* s3_bucket - S3 bucket where the downscaled image is stored
-* endpoint - Sagemaker endpoint to be utilized for upscaling
-**Return:** Returns a base64 encoded image.
+* s3_bucket - S3 bucket where the downscaled image is stored.  
+* endpoint - Sagemaker endpoint to be utilized for upscaling.
+**Return:** Returns a base64 encoded image.  
 
 #### Video Upscaler
 
-**Path:** /storeVideo
-**Description:** Will take video stored in S3, downscale it, and store into S3.
-**Method:** POST
-**Content-Type:** application/json
-**Arguments:** 
-* s3_key_name - S3 key of the video to be downscaled.
-* s3_bucket - S3 bucket of the video to be downscaled.
-* min_size - Minimum size of the downscale operation.
-* max_size - Maximum size of the downscale operation.
-**Return:** Returns id of the store video operation.
+**Path:** /storeVideo  
+**Description:** Will take video stored in S3, downscale it, and store into S3.  
+**Method:** POST  
+**Content-Type:** application/json  
+**Arguments:**  
+* s3_key_name - S3 key of the video to be downscaled.  
+* s3_bucket - S3 bucket of the video to be downscaled.  
+* min_size - Minimum size of the downscale operation.  
+* max_size - Maximum size of the downscale operation.  
+**Return:** Returns id of the store video operation.    
 
 **Path:** /retrieveVideo
 **Description:** Will upscale the video and store into S3.
 **Method:** GET
 **Content-Type:** N/A
 **Arguments:** 
-* s3_key - S3 key where the downscaled video is stored.
-* s3_bucket - S3 bucket where the downscaled video is stored
-* endpoint - Sagemaker endpoint to be utilized for upscaling
-* max_workers - Maximum workers to be utilized for upscaling. This determines the speed of the upscaling operation depending on how busy your Sagemaker endpoints are.
-**Return:** Returns id of the retrieve video operation.
+* s3_key - S3 key where the downscaled video is stored.  
+* s3_bucket - S3 bucket where the downscaled video is stored.  
+* endpoint - Sagemaker endpoint to be utilized for upscaling.  
+* max_workers - Maximum workers to be utilized for upscaling. This determines the speed of the upscaling operation depending on how busy your Sagemaker endpoints are.    
+**Return:** Returns id of the retrieve video operation.  
 
-**Path:** /getVideoStatus
-**Description:** Will get the status of the video store/retrieve operation.
-**Method:** GET
-**Content-Type:** N/A
-**Arguments:** 
-* id - id of the video store/retrieve operation
-**Return:** Returns status of the retrieve video operation.
+**Path:** /getVideoStatus  
+**Description:** Will get the status of the video store/retrieve operation.  
+**Method:** GET  
+**Content-Type:** N/A  
+**Arguments:**  
+* id - id of the video store/retrieve operation.  
+**Return:** Returns status of the retrieve video operation.  
 
 ### Teardown
 

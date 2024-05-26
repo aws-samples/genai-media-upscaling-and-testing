@@ -23,6 +23,10 @@ spec:
             value: "/app/ssl/tls.crt"
           - name: SSL_KEY
             value: "/app/ssl/tls.key" 
+          - name: DDB_TABLE
+            value: "<DDB TABLE>"
+          - name: SQS_QUEUE_URL
+            value: "<SQS QUEUE URL>" 
           ports:
             - containerPort: 8443
           volumeMounts:

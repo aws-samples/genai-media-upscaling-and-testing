@@ -20,4 +20,6 @@ spec:
           imagePullPolicy: Always
           env:
           - name: SQS_QUEUE
-            value: "<SQS QUEUE>"
+            value: "<SQS QUEUE NAME>"
+          - name: DDB_TABLE
+            value: "<DDB TABLE NAME>"

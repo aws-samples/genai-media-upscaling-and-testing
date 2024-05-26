@@ -11,10 +11,35 @@ from PIL import Image
 logging.basicConfig(level=logging.INFO)
 
 class VideoUpscaler:
-    def __init__(self):
+    def __init__(self, ddb_table):
         self.s3client = boto3.client('s3')
+        self.ddbclient = boto3.client('dynamodb')
+        self.ddb_table = ddb_table
 
-    def getNewDim(self, image, config):
+    @staticmethod
+    def parse_response(query_response):
+        response_dict = json.loads(query_response['Body'].read())
+        return response_dict['generated_images'], response_dict['prompt']
+
+    @staticmethod
+    def decode_images(generated_images):
+        """Decode the images and convert to RGB format and return"""
+        imageArr = []
+        for generated_image in generated_images:
+            generated_image_decoded = io.BytesIO(base64.b64decode(generated_image.encode()))
+            generated_image_rgb = Image.open(generated_image_decoded).convert("RGB")
+            imageArr.append(generated_image_rgb)
+        return imageArr
+
+    @staticmethod
+    def imageToString(image):
+        buffered = io.BytesIO()
+        image.save(buffered, format="JPEG")
+        img_str = base64.b64encode(buffered.getvalue()).decode('ascii')
+        return img_str
+    
+    @staticmethod
+    def getNewDim(image, config):
         height, width = image.shape[:2]
         aspect_ratio = width / height
         new_width = int(width / 4)
@@ -39,7 +64,40 @@ class VideoUpscaler:
         logging.debug(f"Returning New width: {new_width} and New height: {new_height}")
         return new_width, new_height
 
-    def breakDownFrames(self,id,video,config):
+    @staticmethod
+    def query_endpoint_with_json_payload(payload, contentType, accept, endpoint):
+        logging.info("Starting the Sagemaker Query")
+        encoded_payload = json.dumps(payload).encode('utf-8')
+        sageMakerClient = boto3.client('runtime.sagemaker')
+        response = sageMakerClient.invoke_endpoint(
+            EndpointName= endpoint,
+            ContentType= contentType,
+            Body= encoded_payload,
+            Accept= accept
+        )
+        return response
+
+    def setDDBField(self, id, field, value):
+        self.ddbclient.update_item(
+            TableName=self.ddb_table,
+            Key={
+                "id": {
+                    "S": str(id)
+                }
+            },
+            UpdateExpression="set #st = :s",
+            ExpressionAttributeValues={
+                ":s": {
+                    "S": str(value),
+                }
+            },
+            ExpressionAttributeNames={
+                "#st": field
+            },
+        )
+        pass
+
+    def breakDownFrames(self,id,video,downscale,config):
         logging.info(f"Breaking down frames from video {video} for video id: {id}")
         try:
             os.makedirs(f"/tmp/{id}/oldframes")
@@ -60,10 +118,13 @@ class VideoUpscaler:
         while success:
             success, image = vidcap.read() 
             try:
-                if not new_width or not new_height:
-                    new_width, new_height = self.getNewDim(image,config)
-                resize = cv2.resize(image, (new_width, new_height)) 
-                cv2.imwrite(f"/tmp/{id}/oldframes/%04d.jpg" % count, resize) 
+                if downscale:
+                    if not new_width or not new_height:
+                        new_width, new_height = self.getNewDim(image,config)
+                    resize = cv2.resize(image, (new_width, new_height)) 
+                    cv2.imwrite(f"/tmp/{id}/oldframes/%04d.jpg" % count, resize) 
+                else:
+                    cv2.imwrite(f"/tmp/{id}/oldframes/%04d.jpg" % count, image) 
                 if cv2.waitKey(10) == 27: 
                     break
                 count += 1
@@ -94,41 +155,6 @@ class VideoUpscaler:
             # img_array.append(img)
             out.write(img)
         out.release()
-
-    def query_endpoint_with_json_payload(self, payload, contentType, accept, endpoint):
-        logging.info("Starting the Sagemaker Query")
-        encoded_payload = json.dumps(payload).encode('utf-8')
-        sageMakerClient = boto3.client('runtime.sagemaker')
-        response = sageMakerClient.invoke_endpoint(
-            EndpointName= endpoint,
-            ContentType= contentType,
-            Body= encoded_payload,
-            Accept= accept
-        )
-        return response
-
-    @staticmethod
-    def parse_response(query_response):
-        response_dict = json.loads(query_response['Body'].read())
-        return response_dict['generated_images'], response_dict['prompt']
-
-    @staticmethod
-    def decode_images(generated_images):
-        """Decode the images and convert to RGB format and return"""
-        imageArr = []
-        for generated_image in generated_images:
-            generated_image_decoded = io.BytesIO(base64.b64decode(generated_image.encode()))
-            generated_image_rgb = Image.open(generated_image_decoded).convert("RGB")
-            imageArr.append(generated_image_rgb)
-        return imageArr
-
-    @staticmethod
-    def imageToString(image):
-        buffered = io.BytesIO()
-        image.save(buffered, format="JPEG")
-        img_str = base64.b64encode(buffered.getvalue()).decode('ascii')
-        return img_str
-
 
     def upscale_image(self,base64_string,endpoint):
         requestType = 'application/json;jpeg'

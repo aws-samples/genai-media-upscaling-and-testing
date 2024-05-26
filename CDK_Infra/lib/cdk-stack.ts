@@ -22,6 +22,7 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import { NagSuppressions } from 'cdk-nag';
 import { KubectlV29Layer } from '@aws-cdk/lambda-layer-kubectl-v29';
 const request = require('sync-request');
@@ -29,6 +30,12 @@ const request = require('sync-request');
 export class CdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+
+    //Creates DynamoDB table for storing video upscaling jobs
+    const jobtable = new dynamodb.TableV2(this, 'Table', {
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+    });
 
     //Creates SQS Queue for the video downscaler/upscaler containers
     const sqs_queue = new sqs.Queue(this, 'upscalerVideoQueue');
@@ -114,15 +121,19 @@ export class CdkStack extends cdk.Stack {
         "sqs:GetQueueUrl",
         "sqs:ReceiveMessage",
         "sqs:DeleteMessage",
+        "sqs:SendMessage",
+        //DynamoDB permissions
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:GetItem"
       ],
       resources: [
         sqs_queue.queueArn,
+        jobtable.tableArn,
         //TO-DO:
         // "<SageMaker ARN>",
-        //TO-DO:
         // "<S3 Bucket ARN>/*",
-        //TO-DO:
-        // "<SQS Queue ARN>"
       ]
     }));
     serviceAccount.addToPrincipalPolicy(new iam.PolicyStatement({
@@ -132,13 +143,15 @@ export class CdkStack extends cdk.Stack {
         "sqs:ListQueues",
       ],
       resources: [
+        //TO-DO:
+        // "arn:aws:sqs:region:account_id:*"
         "arn:aws:sqs:"+this.region+":"+this.account+":*",
       ]
     }));
 
     // If you are on an x86 Machine change the instance type. 
-    const x86InstanceType = ec2.InstanceType.of(ec2.InstanceClass.M5, ec2.InstanceSize.XLARGE)  
-    // const ARMInstanceType = ec2.InstanceType.of(ec2.InstanceClass.M7G, ec2.InstanceSize.XLARGE)
+    // const x86InstanceType = ec2.InstanceType.of(ec2.InstanceClass.M5, ec2.InstanceSize.XLARGE)  
+    const ARMInstanceType = ec2.InstanceType.of(ec2.InstanceClass.M7G, ec2.InstanceSize.XLARGE)
     //This will create the NodeGroup in the cluster
     const upscalerClusterNodeGroup = new eks.Nodegroup(this, 'upscalerClusterNodeGroup', {
       nodegroupName: "upscalerClusterNodeGroup",
@@ -146,7 +159,7 @@ export class CdkStack extends cdk.Stack {
       minSize: 4,
       maxSize: 4,
       instanceTypes: [
-        x86InstanceType
+        ARMInstanceType
       ]
     });
 

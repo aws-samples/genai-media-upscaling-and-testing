@@ -1,0 +1,6 @@
+opencv-python
+torch
+requests
+timm
+basicsr
+

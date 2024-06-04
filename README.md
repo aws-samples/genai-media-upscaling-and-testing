@@ -23,7 +23,9 @@ A video upscaler is included in this project. It utilizes a different workflow f
 
 * Stable Diffusion ×4 Upscaler FP16 is a upscale model currently deployable by Jumpstart. The “x4” is the amount the model will upscale and the FP16 stands for 16-bit floating point, which means it uses 16 bits(binary digits) to represent a number. This Upscaling model of Stable AI is able to work on an image and then upscale it by generating new pixels. These new pixels are incorporated into a brand new upscaled version of the original image. For more info, visit this press release: Stability AI is a Generative AI leader that builds its models on AWS https://press.aboutamazon.com/2022/11/stability-ai-selects-aws-as-its-preferred-cloud-provider-to-build-artificial-intelligence-for-the-future. 
 
-* Real-ESRGAN is a general model for Image/Video restoration. It is based on the [this repo](https://github.com/xinntao/Real-ESRGAN). 
+* Real-ESRGAN is a general model for Image/Video restoration. It is based on [this repo](https://github.com/xinntao/Real-ESRGAN). 
+
+* SwinIR2 is another model for Image/Video restoration. It is based on [this repo](https://github.com/JingyunLiang/SwinIR)
 
 ### Deploying Stable Diffusion x4 Upscaler FP16
 
@@ -36,6 +38,10 @@ Here is a video that walks through the Endpoint Deployment: https://d2908q01vomq
 ### Deploying Real-ESRGAN
 
 See documentation in the `Plugins/esrgan-sagemaker` directory. 
+
+### Deploying SwinIR2
+
+See documentation in the `Plugins/swinir2-sagemaker` directory. 
 
 ## Repo Walkthrough
 

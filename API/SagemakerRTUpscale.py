@@ -29,8 +29,8 @@ from S3CommonUpscaler import S3CommonUpscaler
 import logging
 logging.basicConfig(level=logging.INFO)
 # For local test with .env file with AWS user credentials 
-from dotenv import load_dotenv
-load_dotenv(dotenv_path = 'secrets.env')
+# from dotenv import load_dotenv
+# load_dotenv(dotenv_path = 'secrets.env')
 
 # Child class of S3CommonUpscaler
 class SagemakerRTUpscaleProvider(S3CommonUpscaler):

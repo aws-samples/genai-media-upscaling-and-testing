@@ -14,7 +14,7 @@ Purpose:
     This API will be deployed as a Docker Container to ECR and then implemented into the EKS Cluster 
 """
 from flask import Flask, request, jsonify
-from downscale_s3 import  disect_request_store, disect_request_retrieve
+from downscale_s3 import disect_request_store, disect_request_retrieve, disect_request_store_video, disect_request_retrieve_video, disect_request_get_video_status
 import os
 app = Flask(__name__)  
 
@@ -31,10 +31,24 @@ def store_image():
         if statusCode == 200:
             return jsonify({'data': data}, 200)
         else:
-            return jsonify({'error': 'Unable to store image' + str(status)}, 500)
+            return jsonify({'error': 'Unable to store image: ' + str(status)}, 500)
     except Exception as e:
         status = ("Unable to store" + str(e))
-        return jsonify({'error': 'Unable dissect request' + str(status)}, 500)
+        return jsonify({'error': 'Unable dissect request: ' + str(status)}, 500)
+
+@app.route('/storeVideo', methods=['POST'])
+def store_video():
+    try: 
+        status = disect_request_store_video(request)
+        data = status["data"]
+        statusCode = status["code"]
+        if statusCode == 200:
+            return jsonify({'data': data}, 200)
+        else:
+            return jsonify({'error': 'Unable to store video: ' + str(status)}, 500)
+    except Exception as e:
+        status = ("Unable to store" + str(e))
+        return jsonify({'error': 'Unable dissect request: ' + str(status)}, 500)
     
 
 @app.route('/retrieve', methods=['GET'])
@@ -46,11 +60,38 @@ def retrieve_image():
         if statusCode == 200:
             return jsonify({'data': data}, 200)
         else:
-            return jsonify({'error': 'Unable to retrieve image' + str(data)}, 500)
+            return jsonify({'error': 'Unable to retrieve image: ' + str(data)}, 500)
     except Exception as e:
         print("Unable to retrieve" + str(e))
         return jsonify({'error': 'Unable dissect request'}, 500)
     
+@app.route('/retrieveVideo', methods=['GET'])
+def retrieve_video():
+    try:
+        status = disect_request_retrieve_video(request)
+        statusCode = status['code']
+        data = status['data']
+        if statusCode == 200:
+            return jsonify({'data': data}, 200)
+        else:
+            return jsonify({'error': 'Unable to retrieve video: ' + str(data)}, 500)
+    except Exception as e:
+        print("Unable to retrieve" + str(e))
+        return jsonify({'error': 'Unable dissect request'}, 500)
+    
+@app.route('/getVideoStatus', methods=['GET'])
+def get_video_status():
+    try:
+        status = disect_request_get_video_status(request)
+        statusCode = status['code']
+        data = status['data']
+        if statusCode == 200:
+            return jsonify({'data': data}, 200)
+        else:
+            return jsonify({'error': 'Unable to retrieve video status: ' + str(data)}, 500)
+    except Exception as e:
+        print("Unable to get video status" + str(e))
+        return jsonify({'error': 'Unable dissect request'}, 500)
 
 if __name__ == '__main__':
     cert_path = os.getenv('SSL_CERT')

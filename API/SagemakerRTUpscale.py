@@ -34,10 +34,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Child class of S3CommonUpscaler
 class SagemakerRTUpscaleProvider(S3CommonUpscaler):
-    def __init__(self, s3_bucket: str, endpoint: str) -> None:
-        self.s3_bucket_name = s3_bucket
-        self.endpoint = endpoint
-  
+
     # Static methods are used to define utility functions that can be used without creating an instance of the class.
     @staticmethod 
     def decode_images(generated_images):
@@ -134,6 +131,3 @@ class SagemakerRTUpscaleProvider(S3CommonUpscaler):
         except Exception as e:
             logging.info("Unable to upscale image" + str(e))
             return "Unable to upscale image"
-        
-    def retrieve_and_upscale_video(self, key: str) -> str:
-        pass

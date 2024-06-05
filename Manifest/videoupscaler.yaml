@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: videoupscale
+  namespace: upscale
+spec:
+  selector:
+    matchLabels:
+      app: videoupscale
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: videoupscale
+    spec:
+      serviceAccountName: iamserviceaccount
+      containers:
+        - name: videoupscale
+          # image: <{ACCOUNTID}.dkr.ecr.{REGION}.amazonaws.com/{IMAGE}:{TAG}>
+          imagePullPolicy: Always
+          env:
+          - name: SQS_QUEUE
+            value: "<SQS QUEUE NAME>"
+          - name: DDB_TABLE
+            value: "<DDB TABLE NAME>"

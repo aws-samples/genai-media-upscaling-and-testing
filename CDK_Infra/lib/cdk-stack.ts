@@ -21,6 +21,8 @@ import * as eks from 'aws-cdk-lib/aws-eks';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import { NagSuppressions } from 'cdk-nag';
 import { KubectlV29Layer } from '@aws-cdk/lambda-layer-kubectl-v29';
 const request = require('sync-request');
@@ -28,6 +30,21 @@ const request = require('sync-request');
 export class CdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+
+    //Creates DynamoDB table for storing video upscaling jobs
+    const jobtable = new dynamodb.TableV2(this, 'Table', {
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+    });
+
+    new cdk.CfnOutput(this, 'DDB_TABLE', { value: jobtable.tableName });
+
+    //Creates SQS Queue for the video downscaler/upscaler containers
+    const sqs_queue = new sqs.Queue(this, 'upscalerVideoQueue');
+
+    new cdk.CfnOutput(this, 'SQS_QUEUE', { value: sqs_queue.queueName });
+    new cdk.CfnOutput(this, 'SQS_QUEUE_URL', { value: sqs_queue.queueUrl });
+    
     //This will create the VPC for the EKS cluster
     //The VPC will have 2 public subnets and 4 private subnets split over 2 AZs
     //The private subnets will be used for the EKS cluster and the public subnets will be used for ELB.
@@ -102,14 +119,38 @@ export class CdkStack extends cdk.Stack {
       actions: [
         //SageMaker permissions
         "sagemaker:InvokeEndpoint",
+        //S3 permissions
         "s3:GetObject",
-				"s3:PutObject"
+				"s3:PutObject",
+        //SQS permissions
+        "sqs:GetQueueUrl",
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:SendMessage",
+        //DynamoDB permissions
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:GetItem"
+      ],
+      resources: [
+        sqs_queue.queueArn,
+        jobtable.tableArn,
+        //TO-DO:
+        // "<SageMaker ARN>",
+        // "<S3 Bucket ARN>/*",
+      ]
+    }));
+    serviceAccount.addToPrincipalPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        //SQS permissions
+        "sqs:ListQueues",
       ],
       resources: [
         //TO-DO:
-        // "<SageMaker ARN>",
-        //TO-DO:
-        // "<S3 Bucket ARN>/*"
+        // "arn:aws:sqs:region:account_id:*"
+        "arn:aws:sqs:"+this.region+":"+this.account+":*",
       ]
     }));
 
@@ -192,6 +233,13 @@ export class CdkStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       repositoryName: "upscaler-api"
     });
-    new cdk.CfnOutput(this, 'ECRRepoURI', { value: upscalerAPIRepository.repositoryUri });
+    new cdk.CfnOutput(this, 'APIECRRepoURI', { value: upscalerAPIRepository.repositoryUri });
+
+    const videoUpscalerAPIRepository = new ecr.Repository(this, 'videoUpscalerAPIRepository', {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      repositoryName: "upscaler-video"
+    });
+
+    new cdk.CfnOutput(this, 'VIDEOECRRepoURI', { value: videoUpscalerAPIRepository.repositoryUri });
   }
 }

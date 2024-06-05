@@ -13,3 +13,4 @@ s3transfer==0.10.1
 six==1.16.0
 urllib3==2.2.1
 Werkzeug==3.0.3
+python-dotenv==1.0.1

@@ -17,6 +17,8 @@ Purpose:
 """
 import io
 import os
+import uuid
+import json
 import boto3
 from PIL import Image
 from UpscaleInterface import UpscaleProvider
@@ -25,8 +27,10 @@ logging.basicConfig(level=logging.INFO)
 
 # Child class of UpscaleProvider
 class S3CommonUpscaler(UpscaleProvider):
-    def __init__(self, s3_bucket: str, endpoint: str) -> None:
+    def __init__(self, s3_bucket: str) -> None:
         self.s3_bucket_name = s3_bucket
+        self.sqs_queue_url = os.getenv('SQS_QUEUE_URL')
+        self.ddb_table = os.getenv('DDB_TABLE')
 
     # Class dependant methods, mostly works with class attributes
     def setS3_key(self, s3_key:str):
@@ -96,5 +100,99 @@ class S3CommonUpscaler(UpscaleProvider):
             return status
         return status
     
-    def send_and_downscale_video(self, s3_bucket: str, s3_key: str) -> str:
-        pass
+    def send_and_downscale_video(self, key: str, min_size: int, max_size: int) -> str:
+        idToCreate = uuid.uuid4()
+        sqs_client = boto3.client('sqs')
+        ddb_client = boto3.client('dynamodb')
+        body = {
+            "id":str(idToCreate),
+            "video":f"s3://{self.s3_bucket_name}/{key}",
+            "endpoint": "None",
+            "min_size": min_size,
+            "max_size": max_size,
+            "max_workers": 1,
+            "method": "downscale"
+        }
+        sqs_client.send_message(
+            QueueUrl=self.sqs_queue_url,
+            MessageBody=json.dumps(body)
+        )
+        ddb_client.put_item(
+            TableName=self.ddb_table,
+            Item={
+                'id': {
+                    'S': str(idToCreate)
+                },
+                'video': {
+                    'S': f"s3://{self.s3_bucket_name}/{key}"
+                },
+                'min_size': {
+                    'N': str(min_size)
+                },
+                'max_size': {
+                    'N': str(max_size)
+                },
+                'method': {
+                    'S': "downscale"
+                },
+                'status': {
+                    'S': "Submitted"
+                }
+            }
+        )
+
+        return str(idToCreate)
+
+    def retrieve_and_upscale_video(self, key: str, endpoint: str, max_workers: int) -> str:
+        idToCreate = uuid.uuid4()
+        sqs_client = boto3.client('sqs')
+        ddb_client = boto3.client('dynamodb')
+        body = {
+            "id":str(idToCreate),
+            "video":f"s3://{self.s3_bucket_name}/{key}",
+            "endpoint": endpoint,
+            "min_size": 1,
+            "max_size": 1,
+            "max_workers": max_workers,
+            "method": "upscale"
+        }
+        sqs_client.send_message(
+            QueueUrl=self.sqs_queue_url,
+            MessageBody=json.dumps(body)
+        )
+        ddb_client.put_item(
+            TableName=self.ddb_table,
+            Item={
+                'id': {
+                    'S': str(idToCreate)
+                },
+                'video': {
+                    'S': f"s3://{self.s3_bucket_name}/{key}"
+                },
+                'endpoint': {
+                    'S': endpoint
+                },
+                'max_workers': {
+                    'N': str(max_workers)
+                },
+                'method': {
+                    'S': "upscale"
+                },
+                'status': {
+                    'S': "Submitted"
+                }
+            }
+        )
+        return str(idToCreate)
+    
+    def get_video_status(self, id: str) -> str:
+        ddb_client = boto3.client('dynamodb')
+        item = ddb_client.get_item(
+            TableName=self.ddb_table,
+            Key={
+                'id': {
+                    'S': str(id)
+                }
+            },
+        )
+        return json.dumps(item['Item'])
